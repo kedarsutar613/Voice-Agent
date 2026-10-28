@@ -36,6 +36,7 @@ In a second terminal:
 
 ```sh
 cd apps/web
+cp .env.example .env
 npm ci
 npm run dev
 ```
@@ -59,9 +60,73 @@ In a second PowerShell terminal from the project root:
 
 ```powershell
 Set-Location apps/web
+Copy-Item .env.example .env
 npm ci
 npm run dev
 ```
+
+## Frontend and backend environment files
+
+Commit the example files, not real `.env` files. Both templates are included:
+
+```text
+apps/web/.env.example       → copy to apps/web/.env
+services/api/.env.example   → copy to services/api/.env
+```
+
+From the repository root on macOS/Linux:
+
+```sh
+cp apps/web/.env.example apps/web/.env
+cp services/api/.env.example services/api/.env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item apps/web/.env.example apps/web/.env
+Copy-Item services/api/.env.example services/api/.env
+```
+
+Run these copy commands on a fresh clone; do not overwrite an existing `.env` containing your credentials. Restart the affected development server after editing environment values.
+
+### Frontend: `apps/web/.env`
+
+| Variable | Purpose | Local default |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | REST API base path, including `/api/v1` | `/api/v1` |
+| `VITE_VOICE_WS_URL` | Optional voice WebSocket URL; otherwise derived from the API base URL | Empty |
+| `API_PROXY_TARGET` | Vite development proxy destination; not used in production | `http://127.0.0.1:8000` |
+
+`VITE_*` values are public and embedded at build time. Never put API keys, passwords, JWT secrets, or Twilio credentials in frontend environment files. Production changes to `VITE_*` require rebuilding the frontend.
+
+For a frontend and backend on separate public domains:
+
+```dotenv
+VITE_API_BASE_URL=https://api.example.com/api/v1
+VITE_VOICE_WS_URL=wss://api.example.com/api/v1/voice/ws
+```
+
+Set the backend's `CORS_ORIGINS` to the actual frontend origin (for example `https://voice.example.com`). Leave WebSocket URL empty to automatically derive `wss://api.example.com/api/v1/voice/ws` from the HTTPS API URL. HTTPS frontends need HTTPS/WSS backend connections. With the supplied same-origin Nginx setup, keep `VITE_API_BASE_URL=/api/v1` and leave `VITE_VOICE_WS_URL` empty.
+
+### Backend: `services/api/.env`
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | SQLite or PostgreSQL connection URL |
+| `JWT_SECRET` | Private random token-signing secret, at least 32 characters |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial administrator; password at least 12 characters |
+| `CORS_ORIGINS` | Allowed frontend origins, comma-separated without spaces |
+| `OPENAI_API_KEY` | Private OpenAI project key; requires available API credits |
+| `OPENAI_MODEL` | Default model setting; each agent also stores its own model |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Private phone provider credentials |
+| `TWILIO_FROM_NUMBER` | Twilio-owned outbound phone number in E.164 format |
+| `PUBLIC_BASE_URL` | Public HTTPS API origin for Twilio callbacks |
+| `OUTBOUND_ENABLED` | Outbound calling switch; defaults to `false` |
+| `OUTBOUND_ALLOWLIST` | Approved recipient numbers, comma-separated without spaces |
+| `DAILY_CALL_LIMIT`, `MAX_CALL_SECONDS` | Outbound call-count and duration safeguards |
+
+Use the backend template for the full list and placeholders. The server rejects unchanged JWT/password placeholders. Provider keys can remain empty while you explore login, agents, and the dashboard. For live conversations, supply an OpenAI key with available API credits; model-list access alone does not confirm billing availability.
 
 ## First browser conversation
 
@@ -140,6 +205,6 @@ References: [Realtime client events](https://developers.openai.com/api/reference
 
 ## Local verification result
 
-The delivered workspace was checked with Python 3.14 and Node 20/22 tooling: 22 backend tests and 6 frontend tests passed, the Vite production build passed, a fresh SQLite migration and Alembic schema-drift check passed, and the frontend npm audit reported zero vulnerabilities. Login, agent creation, and desktop/mobile dashboard rendering were inspected locally; the 390px layout showed no horizontal overflow. The included GitHub Actions workflow has not been run remotely, and Docker images have not been built here. A harmless upstream Starlette/httpx TestClient deprecation warning appears in backend test output.
+The delivered workspace was checked with Python 3.14 and Node 20/22 tooling: 22 backend tests and 10 frontend tests passed, the Vite production build passed, a fresh SQLite migration and Alembic schema-drift check passed, and the frontend npm audit reported zero vulnerabilities. Login, agent creation, and desktop/mobile dashboard rendering were inspected locally; the 390px layout showed no horizontal overflow. The included GitHub Actions workflow has not been run remotely, and Docker images have not been built here. A harmless upstream Starlette/httpx TestClient deprecation warning appears in backend test output.
 
 Local credentials, API keys, database records, installed dependencies, and build artifacts are excluded from Git. After cloning, copy `services/api/.env.example` to `.env` and configure your own administrator credentials and provider keys. No local users, agents, or conversations are included in the repository. Outbound calling defaults to disabled.

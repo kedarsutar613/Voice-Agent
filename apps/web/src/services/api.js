@@ -1,5 +1,6 @@
 import axios from "axios";
-export const api = axios.create({ baseURL: "/api/v1" });
+import { API_BASE_URL } from "./config";
+export const api = axios.create({ baseURL: API_BASE_URL });
 api.interceptors.request.use((c) => {
   const t = sessionStorage.getItem("token");
   if (t) c.headers.Authorization = `Bearer ${t}`;

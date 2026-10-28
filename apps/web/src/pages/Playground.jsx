@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, PhoneOff, AudioLines, Send, Square } from "lucide-react";
 import { RealtimeAudio } from "../services/audio";
 import { api, errorText } from "../services/api";
+import { voiceSocketUrl } from "../services/config";
 import { Heading, Transcript } from "../components/UI";
 export default function Playground({ notify }) {
   const [agents, setAgents] = useState([]),
@@ -82,9 +83,7 @@ export default function Playground({ notify }) {
         await audio.current.prepare();
       }
       const r = await api.post("/voice/ticket");
-      const ws = new WebSocket(
-        `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/v1/voice/ws?ticket=${r.data.ticket}`,
-      );
+      const ws = new WebSocket(voiceSocketUrl(r.data.ticket));
       socket.current = ws;
       ws.onopen = () =>
         ws.send(JSON.stringify({ agent_id: agent.id, consent }));
